@@ -1,8 +1,12 @@
-FROM maven:3.8.5-openjdk-17 AS build
+# Stage 1: Build stage
+FROM gradle:latest AS build
+WORKDIR /app
 COPY . .
-RUN mvn clean package -DskipTests
+RUN gradle build -x test
 
-FROM openjdk:17.0.1-jdk-slim
-COPY --from=build /target/demo-0.0.1-SNAPSHOT.jar demo.jar
+# Stage 2: Production stage
+FROM adoptopenjdk/openjdk17:latest AS production
+WORKDIR /app
+COPY --from=build /app/build/libs/demo-0.0.1-SNAPSHOT.jar demo.jar
 EXPOSE 8080
-ENTRYPOINT ["java","-jar","demo.jar"]
+ENTRYPOINT ["java", "-jar", "demo.jar"]
