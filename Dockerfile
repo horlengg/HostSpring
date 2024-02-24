@@ -1,12 +1,10 @@
-# Stage 1: Build stage
-FROM gradle:latest AS build
-WORKDIR /app
-COPY . .
-RUN gradle build -x test
+FROM gradle:7-jdk11 AS build
+COPY --chown=gradle:gradle . /home/gradle/src
+WORKDIR /home/gradle/src
+RUN gradle buildFatJar --no-daemon
 
-# Stage 2: Production stage
-FROM adoptopenjdk/openjdk17:latest AS production
-WORKDIR /app
-COPY --from=build /app/build/libs/demo-0.0.1-SNAPSHOT.jar demo.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "demo.jar"]
+FROM openjdk:11
+EXPOSE 8080:8080
+RUN mkdir /app
+COPY --from=build /home/gradle/src/build/libs/*.jar /app/ktor-docker-sample.jar
+ENTRYPOINT ["java","-jar","/app/ktor-docker-sample.jar"]
